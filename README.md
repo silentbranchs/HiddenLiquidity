@@ -1,110 +1,199 @@
-# FHEVM Hardhat Template
+# HiddenLiquidity
 
-A Hardhat-based template for developing Fully Homomorphic Encryption (FHE) enabled Solidity smart contracts using the
-FHEVM protocol by Zama.
+HiddenLiquidity is a privacy-preserving AMM built on Zama FHEVM. It provides encrypted swaps and liquidity pools for
+cUSDC/cETH and cUSDT/cETH with a fixed initial price of 3000 cUSDC = 1 cETH and 3000 cUSDT = 1 cETH. The frontend
+shows encrypted balances by default and allows users to decrypt balances on demand.
 
-## Quick Start
+## Why This Project Exists
 
-For detailed instructions see:
-[FHEVM Hardhat Quick Start Tutorial](https://docs.zama.ai/protocol/solidity-guides/getting-started/quick-start-tutorial)
+Public AMMs expose who traded, how much was traded, and how much liquidity providers hold. HiddenLiquidity addresses
+that by using fully homomorphic encryption (FHE) so that balances, reserves, and shares can remain encrypted on-chain
+while still enabling swaps and liquidity operations.
+
+## Key Advantages
+
+- Confidential balances and LP shares using encrypted euint64 values.
+- Predictable initial pricing for cUSDC/cETH and cUSDT/cETH pools (3000:1).
+- Simple, auditable swap flow with explicit encrypted inputs and proofs.
+- Clear separation between on-chain encrypted logic and off-chain decryption.
+- Frontend shows encrypted balances by default and supports user-driven decryption.
+
+## Problems Solved
+
+- Prevents on-chain observers from learning user balances.
+- Reduces MEV-style inference from public swap amounts.
+- Enables private liquidity provision without revealing share sizes.
+- Keeps swap inputs and pool reserves encrypted throughout contract execution.
+
+## Technology Stack
+
+- Smart contracts: Solidity + Hardhat + Zama FHEVM libraries
+- Privacy: Zama FHEVM and relayer SDK
+- Frontend: React + Vite
+- Wallet + chain access: RainbowKit + wagmi
+- Read-only chain calls: viem
+- Contract writes: ethers
+- Package manager: npm
+
+## Architecture and Components
+
+### Smart Contracts (contracts/)
+
+- `contracts/ConfidentialUSDC.sol` and `contracts/ConfidentialUSDT.sol`
+  - Confidential ERC7984-compatible tokens used as pool base assets.
+- `contracts/ConfidentialETH.sol`
+  - Confidential cETH token used as the pool quote asset.
+- `contracts/ConfidentialSwap.sol`
+  - AMM that supports:
+    - cUSDC <-> cETH swaps
+    - cUSDT <-> cETH swaps
+    - Liquidity add/remove for both pools
+  - Uses encrypted reserves and encrypted LP shares.
+  - Fixed price ratio for swaps: 3000 base tokens per 1 cETH.
+- `contracts/FHECounter.sol`
+  - Reference FHE contract kept for development and testing.
+
+### Tasks (tasks/)
+
+The task helpers use the Hardhat FHEVM plugin to create encrypted inputs and submit them on-chain.
+
+- `task:addresses`
+  - Prints deployed token and swap addresses.
+- `task:mint`
+  - Mints test tokens to the signer (cUSDC, cUSDT, or cETH).
+- `task:add-liquidity`
+  - Adds liquidity to the USDC/ETH or USDT/ETH pool using encrypted amounts.
+- `task:swap`
+  - Executes a swap in any direction using encrypted inputs.
+- `task:decrypt-liquidity`
+  - Decrypts the caller's LP share for a given pool.
+
+### Deployments and ABI Usage
+
+- Deployment outputs are saved under `deployments/<network>`.
+- The frontend must use the ABI from `deployments/sepolia` (copy the generated ABI into the UI).
+- ABI updates should follow a contract re-deploy to keep the UI in sync.
+
+### Frontend (ui/)
+
+- React + Vite UI using RainbowKit for wallet connection.
+- Reads on-chain data with viem and performs write actions with ethers.
+- Encrypted balances are shown by default; the user can click "decrypt" to reveal real values.
+- No Tailwind usage.
+- No frontend environment variables.
+- No localstorage usage.
+- Frontend does not target a localhost network; it targets the configured public network.
+
+## Repository Layout
+
+```
+contracts/     Smart contracts (ConfidentialSwap + tokens)
+deploy/        Deployment scripts
+deployments/   Deployment outputs and ABIs per network
+tasks/         Hardhat tasks for mint/swap/liquidity/decrypt
+test/          Contract tests
+ui/            Frontend application (React + Vite)
+```
+
+## Getting Started
 
 ### Prerequisites
 
-- **Node.js**: Version 20 or higher
-- **npm or yarn/pnpm**: Package manager
+- Node.js 20+
+- npm
 
-### Installation
+### Install Dependencies
 
-1. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-2. **Set up environment variables**
-
-   ```bash
-   npx hardhat vars set MNEMONIC
-
-   # Set your Infura API key for network access
-   npx hardhat vars set INFURA_API_KEY
-
-   # Optional: Set Etherscan API key for contract verification
-   npx hardhat vars set ETHERSCAN_API_KEY
-   ```
-
-3. **Compile and test**
-
-   ```bash
-   npm run compile
-   npm run test
-   ```
-
-4. **Deploy to local network**
-
-   ```bash
-   # Start a local FHEVM-ready node
-   npx hardhat node
-   # Deploy to local network
-   npx hardhat deploy --network localhost
-   ```
-
-5. **Deploy to Sepolia Testnet**
-
-   ```bash
-   # Deploy to Sepolia
-   npx hardhat deploy --network sepolia
-   # Verify contract on Etherscan
-   npx hardhat verify --network sepolia <CONTRACT_ADDRESS>
-   ```
-
-6. **Test on Sepolia Testnet**
-
-   ```bash
-   # Once deployed, you can run a simple test on Sepolia.
-   npx hardhat test --network sepolia
-   ```
-
-## 📁 Project Structure
-
-```
-fhevm-hardhat-template/
-├── contracts/           # Smart contract source files
-│   └── FHECounter.sol   # Example FHE counter contract
-├── deploy/              # Deployment scripts
-├── tasks/               # Hardhat custom tasks
-├── test/                # Test files
-├── hardhat.config.ts    # Hardhat configuration
-└── package.json         # Dependencies and scripts
+```bash
+npm install
 ```
 
-## 📜 Available Scripts
+### Compile and Test
 
-| Script             | Description              |
-| ------------------ | ------------------------ |
-| `npm run compile`  | Compile all contracts    |
-| `npm run test`     | Run all tests            |
-| `npm run coverage` | Generate coverage report |
-| `npm run lint`     | Run linting checks       |
-| `npm run clean`    | Clean build artifacts    |
+```bash
+npm run compile
+npm run test
+```
 
-## 📚 Documentation
+### Local Deployment (FHEVM Node)
 
-- [FHEVM Documentation](https://docs.zama.ai/fhevm)
-- [FHEVM Hardhat Setup Guide](https://docs.zama.ai/protocol/solidity-guides/getting-started/setup)
-- [FHEVM Testing Guide](https://docs.zama.ai/protocol/solidity-guides/development-guide/hardhat/write_test)
-- [FHEVM Hardhat Plugin](https://docs.zama.ai/protocol/solidity-guides/development-guide/hardhat)
+Start a local node and deploy locally for development and task testing.
 
-## 📄 License
+```bash
+npx hardhat node
+npx hardhat deploy --network localhost
+```
 
-This project is licensed under the BSD-3-Clause-Clear License. See the [LICENSE](LICENSE) file for details.
+### Task Examples
 
-## 🆘 Support
+```bash
+# Print addresses
+npx hardhat task:addresses --network localhost
 
-- **GitHub Issues**: [Report bugs or request features](https://github.com/zama-ai/fhevm/issues)
-- **Documentation**: [FHEVM Docs](https://docs.zama.ai)
-- **Community**: [Zama Discord](https://discord.gg/zama)
+# Mint tokens to your signer (amount is uint64 base units)
+npx hardhat task:mint --network localhost --token usdc --amount 1000000
+npx hardhat task:mint --network localhost --token ceth --amount 500
 
----
+# Add liquidity to USDC/ETH pool
+npx hardhat task:add-liquidity --network localhost --pool usdc --base 3000000 --eth 1000
 
-**Built with ❤️ by the Zama team**
+# Swap USDT for ETH
+npx hardhat task:swap --network localhost --direction usdt-eth --amount 300000
+
+# Decrypt LP share
+npx hardhat task:decrypt-liquidity --network localhost --pool usdc
+```
+
+### Sepolia Deployment
+
+Deployment to Sepolia requires a private key and an Infura API key.
+
+1. Create a `.env` file in the repo root with:
+   - `INFURA_API_KEY`
+   - `PRIVATE_KEY`
+2. Ensure tests and local tasks pass.
+3. Deploy:
+
+```bash
+npx hardhat deploy --network sepolia
+```
+
+Notes:
+- Do not use MNEMONIC for deployments.
+- Deployment outputs are written to `deployments/sepolia`.
+
+## Frontend Usage
+
+```bash
+cd ui
+npm install
+npm run dev
+```
+
+UI behavior:
+
+- Connect a wallet using RainbowKit.
+- View encrypted balances for cUSDC, cUSDT, and cETH.
+- Click "decrypt" to reveal the decrypted balance (via the relayer).
+- Perform swaps and add liquidity from the UI; writes go through ethers and reads use viem.
+
+## Security and Limitations
+
+- Swaps use a fixed ratio (3000:1), not a constant-product curve.
+- No swap fee is applied in the current implementation.
+- Amounts are stored as encrypted uint64 values, which limits magnitude.
+- Decryption requires user interaction and relayer support.
+- This is a testnet-focused project and should be audited before production use.
+
+## Future Roadmap
+
+- Add constant-product pricing with slippage controls and fees.
+- Add liquidity removal flows and richer analytics in the UI.
+- Support additional assets and configurable pool ratios.
+- Improve LP share accounting and pool invariant verification.
+- Add monitoring dashboards for encrypted reserve health.
+- Formal security review and fuzz testing on encrypted logic.
+
+## License
+
+BSD-3-Clause-Clear. See `LICENSE`.
