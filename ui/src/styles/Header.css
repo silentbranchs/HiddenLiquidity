@@ -1,0 +1,36 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px;
+}
+
+.header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header__logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #5f8cff, #6de2e7);
+  display: grid;
+  place-items: center;
+  color: #0c101b;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.header__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.header__subtitle {
+  margin: 0;
+  color: #9fb1c4;
+  font-size: 0.9rem;
+}
